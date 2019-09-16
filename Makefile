@@ -1,4 +1,4 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help
+.PHONY: clean clean-test clean-pyc clean-build docs help deps dev-deps
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -49,6 +49,12 @@ clean-test: ## remove test and coverage artifacts
 	rm -f .coverage
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
+
+deps:
+	pip install -r requirements.txt
+
+dev-deps: deps
+	pip install -r dev_requirements.txt
 
 lint: ## check style with flake8
 	flake8 mozdef_alert_triage_bot tests
