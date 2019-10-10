@@ -105,3 +105,6 @@ venv.bak/
 
 # macOS junk
 .DS_Store
+
+# Vim swp files
+.swp
