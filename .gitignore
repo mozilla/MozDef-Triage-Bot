@@ -107,4 +107,4 @@ venv.bak/
 .DS_Store
 
 # Vim swp files
-.swp
+*.swp
