@@ -1,0 +1,218 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Lambda function and API Gateway to integrate MozDef and Slack
+Metadata:
+  Source: https://github.com/mozilla/MozDef-Triage-Bot/blob/master/cloudformation/slack-triage-bot-api.yaml
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+    - Label:
+        default: API
+      Parameters:
+      - CustomDomainName
+      - DomainNameZone
+      - CertificateArn
+    ParameterLabels:
+      CustomDomainName:
+        default: Custom DNS Domain Name
+      DomainNameZone:
+        default: DNS Zone containing the Custom DNS Domain Name
+      CertificateArn:
+        default: AWS ACM Certificate ARN for the Custom DNS Domain Name
+Parameters:
+  CustomDomainName:
+    Type: String
+    Description: The custom domain name to use for the API
+    Default: ''
+  DomainNameZone:
+    Type: String
+    Description: The Route53 DNS zone containing the custom domain name
+    Default: ''
+  CertificateArn:
+    Type: String
+    Description: The ARN of the AWS ACM Certificate for your custom domain name
+    Default: ''
+Conditions:
+  UseCustomDomainName: !Not [ !Equals [ !Ref 'CustomDomainName', '' ] ]
+Rules:
+  DomainNameAndCertificateArnProvided:
+    RuleCondition: !Or [ !Not [ !Equals [ !Ref 'CustomDomainName', '' ] ], !Not [ !Equals [ !Ref 'DomainNameZone', '' ] ], !Not [ !Equals [ !Ref 'CertificateArn', '' ] ] ]
+    Assertions:
+      - Assert: !And [ !Not [ !Equals [ !Ref 'CustomDomainName', '' ] ], !Not [ !Equals [ !Ref 'DomainNameZone', '' ] ], !Not [ !Equals [ !Ref 'CertificateArn', '' ] ] ]
+        AssertDescription: If you set a CustomDomainName, DomainNameZone or CertificateArn you must provide all values
+Resources:
+  SlackTriageBotApiFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        - PolicyName: AllowLambdaLogging
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+  SlackTriageBotApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: MozDef Slack Traige Bot API
+      Code: build/
+      Environment:
+        Variables:
+          DOMAIN_NAME: !Ref CustomDomainName  # What if a domain name isn't provided?
+          LOG_LEVEL: DEBUG
+      Handler: slack_triage_bot_api.app.lambda_handler
+      Runtime: python3.7
+      Role: !GetAtt SlackTriageBotApiFunctionRole.Arn
+      Tags:
+        - Key: application
+          Value: slack-triage-bot-api
+        - Key: stack
+          Value: !Ref AWS::StackName
+        - Key: source
+          Value: https://github.com/mozilla/MozDef-Triage-Bot
+      Timeout: 900
+  SlackTriageBotApiFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      # Let's hope that the Lambda function doesn't execute before this LogGroup
+      # resource is created, creating the LogGroup with no expiration and
+      # preventing this resource from creating
+      LogGroupName: !Join [ '/', ['/aws/lambda', !Ref 'SlackTriageBotApiFunction' ] ]
+      RetentionInDays: 14
+  SlackTriageBotApiDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Condition: UseCustomDomainName
+    Properties:
+      RegionalCertificateArn: !Ref CertificateArn
+      DomainName: !Ref CustomDomainName
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+  SlackTriageBotApiRoute53RecordSet:
+    Type: AWS::Route53::RecordSet
+    Condition: UseCustomDomainName
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt SlackTriageBotApiDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt SlackTriageBotApiDomainName.RegionalHostedZoneId
+      Comment: Bind the custom domain name to the SlackTriageBotApi API Gateway
+      HostedZoneName: !Ref DomainNameZone
+      Name: !Ref CustomDomainName
+      Type: A
+  SlackTriageBotApiApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: SlackTriageBotApi
+      Description: MozDef Slack Triage Bot API
+      FailOnWarnings: true
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+  SlackTriageBotApiBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: UseCustomDomainName
+    Properties:
+      DomainName: !Ref SlackTriageBotApiDomainName
+      RestApiId: !Ref SlackTriageBotApiApi
+      Stage: !Ref SlackTriageBotApiApiStage
+  SlackTriageBotApiLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !GetAtt SlackTriageBotApiFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [ '', [ 'arn:aws:execute-api:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref 'SlackTriageBotApiApi', '/*/*' ] ]
+  SlackTriageBotApiApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref SlackTriageBotApiApiDeployment
+      MethodSettings:
+        - DataTraceEnabled: true
+          HttpMethod: '*'
+          # LoggingLevel: INFO
+          ResourcePath: /*
+      RestApiId: !Ref SlackTriageBotApiApi
+      Tags:
+        - Key: application
+          Value: slack-triage-bot-api
+        - Key: stack
+          Value: !Ref AWS::StackName
+        - Key: source
+          Value: https://github.com/mozilla-iam/slack-triage-bot-api/
+      # Description: x
+      # StageName: LATEST
+  SlackTriageBotApiApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - SlackTriageBotApiRequest
+    Properties:
+      RestApiId: !Ref SlackTriageBotApiApi
+      StageName: DummyStage
+      # Note This property is required by API Gateway. We recommend that you
+      # specify a name using any value (see Examples) and that you don’t use
+      # this stage. We recommend not using this stage because it is tied to
+      # this deployment, which means you can’t delete one without deleting the
+      # other. For example, if you delete this deployment, API Gateway also
+      # deletes this stage, which you might want to keep. Instead, use the
+      # AWS::ApiGateway::Stage resource to create and associate a stage with
+      # this deployment.
+  SlackTriageBotApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref SlackTriageBotApiApi
+      ParentId: !GetAtt SlackTriageBotApiApi.RootResourceId
+      PathPart: '{proxy+}'
+  SlackTriageBotApiRequest:
+    DependsOn: SlackTriageBotApiLambdaPermission
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#set-up-lambda-proxy-integration-using-cli
+        # "For Lambda integrations, you must use the HTTP method of POST for the
+        # integration request, according to the specification of the Lambda service
+        # action for function invocations."
+        IntegrationHttpMethod: POST
+        Uri: !Join [ '', [ 'arn:aws:apigateway:', !Ref 'AWS::Region', ':lambda:path/2015-03-31/functions/', !GetAtt 'SlackTriageBotApiFunction.Arn', '/invocations' ] ]
+      ResourceId: !Ref SlackTriageBotApiResource
+      RestApiId: !Ref SlackTriageBotApiApi
+  SlackTriageBotApiPOSTRequest:
+    DependsOn: SlackTriageBotApiLambdaPermission
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#set-up-lambda-proxy-integration-using-cli
+        # "For Lambda integrations, you must use the HTTP method of POST for the
+        # integration request, according to the specification of the Lambda service
+        # action for function invocations."
+        IntegrationHttpMethod: POST
+        Uri: !Join [ '', [ 'arn:aws:apigateway:', !Ref 'AWS::Region', ':lambda:path/2015-03-31/functions/', !GetAtt 'SlackTriageBotApiFunction.Arn', '/invocations' ] ]
+      ResourceId: !Ref SlackTriageBotApiResource
+      RestApiId: !Ref SlackTriageBotApiApi
+Outputs:
+  SlackTriageBotApiUrl:
+    Description: The URL of the AWS Federated RP
+    Value:
+      Fn::If:
+        - UseCustomDomainName
+        - !Join [ '', [ 'https://', !Ref 'CustomDomainName', '/'] ]
+        - !Join [ '', [ 'https://', !Ref 'SlackTriageBotApiApi', '.execute-api.', !Ref 'AWS::Region', '.amazonaws.com/', !Ref 'SlackTriageBotApiApiStage', '/' ] ]
+  SlackTriageBotFunctionName:
+    Description: The AWS Lambda function name
+    Value: !Ref SlackTriageBotApiFunction
