@@ -45,7 +45,9 @@ test-mozdef-slack-triage-bot-api-http:
 .PHONE: test-mozdef-slack-triage-bot-api-invoke
 test-mozdef-slack-triage-bot-api-invoke:
 	FUNCTION_NAME=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotFunctionName'].OutputValue" --output text` && \
-	aws lambda invoke --function-name $$FUNCTION_NAME --payload '{"foo": "baz"}' response.json && \
+	ACCESS_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerAccessKeyId'].OutputValue" --output text` && \
+	SECRET_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerSecretAccessKey'].OutputValue" --output text` && \
+	AWS_ACCESS_KEY_ID=$$ACCESS_KEY AWS_SECRET_ACCESS_KEY=$$SECRET_KEY AWS_SESSION_TOKEN= aws lambda invoke --function-name $$FUNCTION_NAME --payload '{"foo": "baz"}' response.json && \
 	cat response.json && \
 	rm response.json
 
