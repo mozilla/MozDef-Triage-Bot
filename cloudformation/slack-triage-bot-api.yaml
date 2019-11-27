@@ -205,6 +205,25 @@ Resources:
         Uri: !Join [ '', [ 'arn:aws:apigateway:', !Ref 'AWS::Region', ':lambda:path/2015-03-31/functions/', !GetAtt 'SlackTriageBotApiFunction.Arn', '/invocations' ] ]
       ResourceId: !Ref SlackTriageBotApiResource
       RestApiId: !Ref SlackTriageBotApiApi
+  SlackTriageBotInvokerUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - PolicyName: AllowInvokingSlackTriageBotAPI
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt SlackTriageBotApiFunction.Arn
+  SlackTriageBotInvokerAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      Serial: 20191127
+      Status: Active
+      UserName: !Ref SlackTriageBotInvokerUser
 Outputs:
   SlackTriageBotApiUrl:
     Description: The URL of the AWS Federated RP
@@ -216,3 +235,12 @@ Outputs:
   SlackTriageBotFunctionName:
     Description: The AWS Lambda function name
     Value: !Ref SlackTriageBotApiFunction
+  SlackTriageBotInvokerName:
+    Description: The Username of the SlackTriageBotInvoker
+    Value: !Ref SlackTriageBotInvokerUser
+  SlackTriageBotInvokerAccessKeyId:
+    Description: The AWS API Access Key ID of the SlackTriageBotInvoker
+    Value: !Ref SlackTriageBotInvokerAccessKey
+  SlackTriageBotInvokerSecretAccessKey:
+    Description: The AWS API Access Key Secret Key of the SlackTriageBotInvoker
+    Value: !GetAtt SlackTriageBotInvokerAccessKey.SecretAccessKey
