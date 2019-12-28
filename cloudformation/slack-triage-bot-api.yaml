@@ -10,6 +10,11 @@ Metadata:
       - CustomDomainName
       - DomainNameZone
       - CertificateArn
+    - Label:
+        default: Slack
+      Parameters:
+        - SlackClientId
+        - SlackClientSecret
     ParameterLabels:
       CustomDomainName:
         default: Custom DNS Domain Name
@@ -17,6 +22,10 @@ Metadata:
         default: DNS Zone containing the Custom DNS Domain Name
       CertificateArn:
         default: AWS ACM Certificate ARN for the Custom DNS Domain Name
+      SlackClientId:
+        default: Slack App OAuth client ID
+      SlackClientSecret:
+        default: Slack App OAuth client secret
 Parameters:
   CustomDomainName:
     Type: String
@@ -30,6 +39,13 @@ Parameters:
     Type: String
     Description: The ARN of the AWS ACM Certificate for your custom domain name
     Default: ''
+  SlackClientId:
+    Type: String
+    Description: Slack App OAuth client ID
+  SlackClientSecret:
+    Type: String
+    NoEcho: true
+    Description: Slack App OAuth client secret
 Conditions:
   UseCustomDomainName: !Not [ !Equals [ !Ref 'CustomDomainName', '' ] ]
 Rules:
@@ -62,6 +78,37 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: '*'
+        - PolicyName: AllowReadWriteParameterStore
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                  - ssm:AddTagsToResource
+                Resource: !Join [ '', [ 'arn:aws:ssm:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':parameter/SlackTriageBot/*' ] ]
+        - PolicyName: AllowEncryptDecryptParameterStore
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:Encrypt
+                Resource: '*'  # This is a wildcard because determining the CMK ARN for the aws/ssm KMS key is difficult
+                Condition:
+                  StringLike:
+                    'kms:EncryptionContext:PARAMETER_ARN': !Join [ '', [ 'arn:aws:ssm:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':parameter/SlackTriageBot/*' ] ]
+        - PolicyName: AllowSendSlackTriageBotSQSQueue
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !GetAtt SlackTriageBotMozDefQueue.Arn
   SlackTriageBotApiFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -70,7 +117,10 @@ Resources:
       Environment:
         Variables:
           DOMAIN_NAME: !Ref CustomDomainName  # What if a domain name isn't provided?
-          LOG_LEVEL: DEBUG
+          SLACK_CLIENT_ID: !Ref SlackClientId
+          SLACK_CLIENT_SECRET: !Ref SlackClientSecret
+          QUEUE_URL: !Ref SlackTriageBotMozDefQueue
+          LOG_LEVEL: INFO
       Handler: slack_triage_bot_api.app.lambda_handler
       Runtime: python3.7
       Role: !GetAtt SlackTriageBotApiFunctionRole.Arn
@@ -205,6 +255,17 @@ Resources:
         Uri: !Join [ '', [ 'arn:aws:apigateway:', !Ref 'AWS::Region', ':lambda:path/2015-03-31/functions/', !GetAtt 'SlackTriageBotApiFunction.Arn', '/invocations' ] ]
       ResourceId: !Ref SlackTriageBotApiResource
       RestApiId: !Ref SlackTriageBotApiApi
+  SlackTriageBotMozDefQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 345600  # 4 days, the AWS default
+      Tags:
+        - Key: application
+          Value: slack-triage-bot-api
+        - Key: stack
+          Value: !Ref AWS::StackName
+        - Key: source
+          Value: https://github.com/mozilla/MozDef-Triage-Bot
   SlackTriageBotInvokerUser:
     Type: AWS::IAM::User
     Properties:
@@ -218,6 +279,21 @@ Resources:
                   - lambda:InvokeFunction
                 Resource:
                   - !GetAtt SlackTriageBotApiFunction.Arn
+        - PolicyName: AllowReceiveSlackTriageBotSQSQueue
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ChangeMessageVisibility
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                  - sqs:ListQueueTags
+                  - sqs:PurgeQueue
+                  - sqs:ReceiveMessage
+                Resource:
+                  - !GetAtt SlackTriageBotMozDefQueue.Arn
   SlackTriageBotInvokerAccessKey:
     Type: AWS::IAM::AccessKey
     Properties:
@@ -244,3 +320,12 @@ Outputs:
   SlackTriageBotInvokerSecretAccessKey:
     Description: The AWS API Access Key Secret Key of the SlackTriageBotInvoker
     Value: !GetAtt SlackTriageBotInvokerAccessKey.SecretAccessKey
+  SlackTriageBotMozDefSQSQueueArn:
+    Description: The ARN of the MozDef SQS Queue
+    Value: !GetAtt SlackTriageBotMozDefQueue.Arn
+  SlackTriageBotMozDefSQSQueueName:
+    Description: The Name of the MozDef SQS Queue
+    Value: !GetAtt SlackTriageBotMozDefQueue.QueueName
+  SlackTriageBotMozDefSQSQueueUrl:
+    Description: The Url of the MozDef SQS Queue
+    Value: !Ref SlackTriageBotMozDefQueue
