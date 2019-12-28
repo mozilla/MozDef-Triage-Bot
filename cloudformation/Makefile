@@ -10,6 +10,10 @@ PROD_DOMAIN_ZONE	:= security.mozilla.org.
 DEV_DOMAIN_ZONE		:= security.allizom.org.
 PROD_CERT_ARN		:= arn:aws:acm:us-west-2:371522382791:certificate/71e3c455-de1f-4a9d-b50e-440624854c48
 DEV_CERT_ARN		:= arn:aws:acm:us-west-2:656532927350:certificate/2e59930d-ae8c-43fa-adff-ed3b1a902caa
+PROD_SLACK_CLIENT_ID	:= ???
+DEV_SLACK_CLIENT_ID		:= 371351187216.856548004901
+# PROD_SLACK_CLIENT_SECRET	:= ???
+# DEV_SLACK_CLIENT_SECRET		:= ???
 
 .PHONE: deploy-mozdef-slack-triage-bot-api-dev
 deploy-mozdef-slack-triage-bot-api-dev:
@@ -21,7 +25,9 @@ deploy-mozdef-slack-triage-bot-api-dev:
 		 $(CODE_STORAGE_S3_PREFIX) \
 		 "CustomDomainName=$(DEV_DOMAIN_NAME) \
 		 	DomainNameZone=$(DEV_DOMAIN_ZONE) \
-		 	CertificateArn=$(DEV_CERT_ARN)" \
+		 	CertificateArn=$(DEV_CERT_ARN) \
+			SlackClientId=$(DEV_SLACK_CLIENT_ID) \
+			SlackClientSecret=$(DEV_SLACK_CLIENT_SECRET)" \
 		 SlackTriageBotApiUrl
 
 .PHONE: deploy-mozdef-slack-triage-bot-api
@@ -34,7 +40,9 @@ deploy-mozdef-slack-triage-bot-api:
 		 $(CODE_STORAGE_S3_PREFIX) \
 		 "CustomDomainName=$(PROD_DOMAIN_NAME) \
 		 	DomainNameZone=$(PROD_DOMAIN_ZONE) \
-		 	CertificateArn=$(PROD_CERT_ARN)" \
+		 	CertificateArn=$(PROD_CERT_ARN) \
+			SlackClientId=$(PROD_SLACK_CLIENT_ID) \
+			SlackClientSecret=$(PROD_SLACK_CLIENT_SECRET)" \
 		 SlackTriageBotApiUrl
 
 .PHONE: test-mozdef-slack-triage-bot-api-http
@@ -47,7 +55,58 @@ test-mozdef-slack-triage-bot-api-invoke:
 	FUNCTION_NAME=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotFunctionName'].OutputValue" --output text` && \
 	ACCESS_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerAccessKeyId'].OutputValue" --output text` && \
 	SECRET_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerSecretAccessKey'].OutputValue" --output text` && \
-	AWS_ACCESS_KEY_ID=$$ACCESS_KEY AWS_SECRET_ACCESS_KEY=$$SECRET_KEY AWS_SESSION_TOKEN= aws lambda invoke --function-name $$FUNCTION_NAME --payload '{"foo": "baz"}' response.json && \
+	AWS_ACCESS_KEY_ID=$$ACCESS_KEY AWS_SECRET_ACCESS_KEY=$$SECRET_KEY AWS_SESSION_TOKEN= aws lambda invoke \
+	  --function-name $$FUNCTION_NAME \
+	  --payload '{"identifier": "9Zo02m4B7gIfixq3c4Xh", "alert": "duo_bypass_codes_generated", "identityConfidence": "highest", "summary": "DUO bypass codes have been generated for your account. ", "user": "$(EMAIL_ADDRESS)"}' \
+	  response.json && \
+	cat response.json && \
+	rm response.json
+
+.PHONE: test-mozdef-slack-triage-bot-api-invoke-ssh1
+test-mozdef-slack-triage-bot-api-invoke-ssh1:
+	FUNCTION_NAME=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotFunctionName'].OutputValue" --output text` && \
+	ACCESS_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerAccessKeyId'].OutputValue" --output text` && \
+	SECRET_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerSecretAccessKey'].OutputValue" --output text` && \
+	AWS_ACCESS_KEY_ID=$$ACCESS_KEY AWS_SECRET_ACCESS_KEY=$$SECRET_KEY AWS_SESSION_TOKEN= aws lambda invoke \
+	  --function-name $$FUNCTION_NAME \
+	  --payload '{"identifier": "9Zo02m4B7gIfixq3c4Xh", "alert": "sensitive_host_session", "identityConfidence": "low", "summary": "An SSH session to a potentially sensitive host sensitive.example.com was made by your user account.", "user": "$(EMAIL_ADDRESS)"}' \
+	  response.json && \
+	cat response.json && \
+	rm response.json
+
+.PHONE: test-mozdef-slack-triage-bot-api-invoke-ssh2
+test-mozdef-slack-triage-bot-api-invoke-ssh2:
+	FUNCTION_NAME=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotFunctionName'].OutputValue" --output text` && \
+	ACCESS_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerAccessKeyId'].OutputValue" --output text` && \
+	SECRET_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerSecretAccessKey'].OutputValue" --output text` && \
+	AWS_ACCESS_KEY_ID=$$ACCESS_KEY AWS_SECRET_ACCESS_KEY=$$SECRET_KEY AWS_SESSION_TOKEN= aws lambda invoke \
+	  --function-name $$FUNCTION_NAME \
+	  --payload '{"identifier": "9Zo02m4B7gIfixq3c4Xh", "alert": "ssh_access_sign_releng", "identityConfidence": "low", "summary": "An SSH session was established to host host.example.com by your user account.", "user": "$(EMAIL_ADDRESS)"}' \
+	  response.json && \
+	cat response.json && \
+	rm response.json
+
+.PHONE: test-mozdef-slack-triage-bot-api-invoke-duo-code-used
+test-mozdef-slack-triage-bot-api-invoke-duo-code-used:
+	FUNCTION_NAME=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotFunctionName'].OutputValue" --output text` && \
+	ACCESS_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerAccessKeyId'].OutputValue" --output text` && \
+	SECRET_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerSecretAccessKey'].OutputValue" --output text` && \
+	AWS_ACCESS_KEY_ID=$$ACCESS_KEY AWS_SECRET_ACCESS_KEY=$$SECRET_KEY AWS_SESSION_TOKEN= aws lambda invoke \
+	  --function-name $$FUNCTION_NAME \
+	  --payload '{"identifier": "9Zo02m4B7gIfixq3c4Xh", "alert": "duo_bypass_codes_used", "identityConfidence": "highest", "summary": "DUO bypass codes belonging to your account have been used to ", "user": "$(EMAIL_ADDRESS)"}' \
+	  response.json && \
+	cat response.json && \
+	rm response.json
+
+.PHONE: discover-sqs-queue-url
+discover-sqs-queue-url:
+	FUNCTION_NAME=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotFunctionName'].OutputValue" --output text` && \
+	ACCESS_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerAccessKeyId'].OutputValue" --output text` && \
+	SECRET_KEY=`aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query "Stacks[0].Outputs[?OutputKey=='SlackTriageBotInvokerSecretAccessKey'].OutputValue" --output text` && \
+	AWS_ACCESS_KEY_ID=$$ACCESS_KEY AWS_SECRET_ACCESS_KEY=$$SECRET_KEY AWS_SESSION_TOKEN= aws lambda invoke \
+	  --function-name $$FUNCTION_NAME \
+	  --payload '{"action": "discover-sqs-queue-url"}' \
+	  response.json && \
 	cat response.json && \
 	rm response.json
 
