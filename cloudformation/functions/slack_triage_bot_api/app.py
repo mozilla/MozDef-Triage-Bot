@@ -419,8 +419,8 @@ def lambda_handler(event: dict, context: dict) -> dict:
     :return: An AWS API Gateway output dictionary for proxy mode
     """
     logger.debug('event is {}'.format(event))
-    try:
-        if event.get('resource') == '/{proxy+}':
+    if event.get('resource') == '/{proxy+}':
+        try:
             headers = event['headers'] if event['headers'] is not None else {}
             cookie_header = headers.get('Cookie', '')
             referer = headers.get('Referer', '')
@@ -438,23 +438,28 @@ def lambda_handler(event: dict, context: dict) -> dict:
             else:
                 body = {}
             return process_api_call(event, query_string_parameters, body)
-        else:
-            # Not an API Gateway invocation, we'll assume a direct Lambda invocation
+        except Exception as e:
+            logger.error(str(e))
+            logger.error(traceback.format_exc())
+            return {
+                'headers': {'Content-Type': 'text/html'},
+                'statusCode': 500,
+                'body': 'Error'}
+    else:
+        # Not an API Gateway invocation, we'll assume a direct Lambda invocation
+        try:
             if event.get('action') == 'discover-sqs-queue-url':
                 result = CONFIG.queue_url
             else:
-                result = send_message_to_slack(
-                    event.get('identifier'),
-                    event.get('alert'),
-                    event.get('summary'),
-                    event.get('user'),
-                    event.get('identityConfidence')
-                )
-            return {'result': result}
-    except Exception as e:
-        logger.error(str(e))
-        logger.error(traceback.format_exc())
-        return {
-            'headers': {'Content-Type': 'text/html'},
-            'statusCode': 500,
-            'body': 'Error'}
+                try:
+                    result = send_message_to_slack(
+                        event.get('identifier'),
+                        event.get('alert'),
+                        event.get('summary'),
+                        event.get('user'),
+                        event.get('identityConfidence')
+                    )
+                except SlackException as e:
+                    return {'result': e}
+        except Exception as e:
+            return {'result': str(e)}
