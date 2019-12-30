@@ -460,6 +460,7 @@ def lambda_handler(event: dict, context: dict) -> dict:
                         event.get('identityConfidence')
                     )
                 except SlackException as e:
-                    return {'result': e}
+                    result = e
         except Exception as e:
-            return {'result': str(e)}
+            result = str(e)
+        return result
