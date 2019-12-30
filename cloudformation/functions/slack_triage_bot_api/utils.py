@@ -121,7 +121,14 @@ def call_slack(
             response = requests.post(url, data=data, headers=headers)
         response.raise_for_status()
         if not response.json().get('ok'):
-            raise SlackException(response.json().get('error'))
+            raise SlackException(
+                {
+                    'error': response.json().get('error'),
+                    'url': url,
+                    'data': data,
+                    'response': response.json()
+                }
+            )
     except requests.exceptions.RequestException as e:
         logger.error(
             'POST of response to {} failed {} : {} : {} : {}'.format(
