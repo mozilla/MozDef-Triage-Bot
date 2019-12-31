@@ -453,7 +453,7 @@ def lambda_handler(event: dict, context: dict) -> dict:
         # Not an API Gateway invocation, we'll assume a direct Lambda invocation
         try:
             if event.get('action') == 'discover-sqs-queue-url':
-                result = CONFIG.queue_url
+                result = {"result": CONFIG.queue_url}
             else:
                 try:
                     result = send_message_to_slack(
@@ -464,7 +464,7 @@ def lambda_handler(event: dict, context: dict) -> dict:
                         event.get('identityConfidence')
                     )
                 except SlackException as e:
-                    result = e
+                    result = {"result": e}
         except Exception as e:
-            result = str(e)
+            result = {"result": str(e)}
         return result
