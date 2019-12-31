@@ -6,6 +6,9 @@ A Slack bot that facilitates triaging MozDef alerts by automating outreach to Mo
 ### Deployment
 
 To deploy the slack-triage-bot-api into AWS
+* create the IAM user that MozDef will use to interact with the Lambda function
+  and SQS queue
+  `make deploy-mozdef-slack-triage-bot-user`
 * determine the Slack Client Secret
 * Run the make command for the environment you want
 
@@ -88,4 +91,24 @@ which will return a value like
 
 ```json
 {"result": "https://sqs.us-west-2.amazonaws.com/012345678901/MozDefSlackTraigeBotAPI-SlackTriageBotMozDefQueue-ABCDEFGHIJKL"}
+```
+
+### Discovering the Lambda function name
+
+Call the [lambda:ListFunctions](https://docs.aws.amazon.com/lambda/latest/dg/API_ListFunctions.html)
+API and filter the results based on the name. You can see an example of this by
+running the make command
+
+```shell script
+make discover-lambda-function-name 
+```
+
+which will return a value like `MozDefSlackTriageBotAPI-SlackTriageBotApiFunction-1N9KLDX1926F3`
+
+### Fetching User API Keys
+
+You can fetch the User API keys from the CloudFormation outputs
+
+```shell script
+make show-user-credentials
 ```
