@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: MozDef user used to invoke the Slack Triage Bot Lambda function and fetch messages from the SQS queue
+Metadata:
+  Source: https://github.com/mozilla/MozDef-Triage-Bot/blob/master/cloudformation/slack-triage-bot-user.yaml
+Resources:
+  SlackTriageBotInvokerUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - PolicyName: AllowInvokingSlackTriageBotAPI
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Join [ ':', [ 'arn:aws:lambda', !Ref 'AWS::Region', !Ref 'AWS::AccountId', 'function:*-SlackTriageBotApiFunction-*' ] ]
+        - PolicyName: AllowListLambdaFunctions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:ListFunctions
+                Resource:
+                  - '*'
+        - PolicyName: AllowReceiveSlackTriageBotSQSQueue
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ChangeMessageVisibility
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                  - sqs:ListQueueTags
+                  - sqs:PurgeQueue
+                  - sqs:ReceiveMessage
+                Resource:
+                  - !Join [ ':', [ 'arn:aws:sqs', !Ref 'AWS::Region', !Ref 'AWS::AccountId', '*-SlackTriageBotMozDefQueue-*' ] ]
+  SlackTriageBotInvokerAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      Serial: 20191230
+      Status: Active
+      UserName: !Ref SlackTriageBotInvokerUser
+Outputs:
+  SlackTriageBotInvokerName:
+    Description: The Username of the SlackTriageBotInvoker
+    Value: !Ref SlackTriageBotInvokerUser
+  SlackTriageBotInvokerAccessKeyId:
+    Description: The AWS API Access Key ID of the SlackTriageBotInvoker
+    Value: !Ref SlackTriageBotInvokerAccessKey
+  SlackTriageBotInvokerSecretAccessKey:
+    Description: The AWS API Access Key Secret Key of the SlackTriageBotInvoker
+    Value: !GetAtt SlackTriageBotInvokerAccessKey.SecretAccessKey

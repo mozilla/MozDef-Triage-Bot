@@ -55,6 +55,7 @@ def compose_message(
         alert: str,
         summary: str,
         email: str,
+        user: dict,
         identity_confidence: str) -> dict:
     """Create a Slack message object
 
@@ -62,6 +63,7 @@ def compose_message(
     :param alert: The name of the MozDef alert
     :param summary: The summary text of the alert
     :param email: The email address of the user
+    :param user: The slack user dictionary
     :param identity_confidence: The identity confidence sent from MozDef
     :return: A Slack message dictionary
     """
@@ -69,6 +71,7 @@ def compose_message(
     default_response = {
         'identifier': identifier,
         'email': email,
+        'slack_name': user['name'],
         'alert': alert,
         'identity_confidence': identity_confidence
     }
@@ -224,7 +227,7 @@ def send_message_to_slack(
     send_to_im = False
     user = get_user_from_email(email_address)
     message = compose_message(
-        identifier, alert, summary, email_address, identity_confidence)
+        identifier, alert, summary, email_address, user, identity_confidence)
     if send_to_im:
         channel = create_slack_channel(user['id'])
         post_result = post_message(channel['id'], message)
@@ -342,6 +345,7 @@ def handle_message_interaction(payload: dict) -> bool:
                 value.get('identifier'),
                 value.get('email'),
                 payload.get('user', {}).get('id'),
+                value.get('slack_name'),
                 value['identity_confidence'],
                 value.get('response')
             )
@@ -449,7 +453,7 @@ def lambda_handler(event: dict, context: dict) -> dict:
         # Not an API Gateway invocation, we'll assume a direct Lambda invocation
         try:
             if event.get('action') == 'discover-sqs-queue-url':
-                result = CONFIG.queue_url
+                result = {"result": CONFIG.queue_url}
             else:
                 try:
                     result = send_message_to_slack(
@@ -460,7 +464,7 @@ def lambda_handler(event: dict, context: dict) -> dict:
                         event.get('identityConfidence')
                     )
                 except SlackException as e:
-                    result = e
+                    result = {"result": e}
         except Exception as e:
-            result = str(e)
+            result = {"result": str(e)}
         return result
