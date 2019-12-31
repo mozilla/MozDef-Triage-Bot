@@ -66,6 +66,7 @@ def emit_to_mozdef(
         identifier: str,
         email: str,
         slack_user_id: str,
+        slack_name: str,
         identity_confidence: str,
         response: str) -> str:
     """Send a message with the user's response to SQS for pickup by MozDef
@@ -73,20 +74,26 @@ def emit_to_mozdef(
     :param identifier: The unique identifier sent by MozDef originally
     :param email: The user's email address
     :param slack_user_id: The user's slack ID
+    :param slack_name: The user's slack username
     :param identity_confidence: The identityConfidence sent by MozDef
                                 originally
     :param response: The user's response
     :return: The message ID returned from SQS after sending the message
     """
     data = {
-        "identifier": identifier,
-        "user": {
-            "email": email,
-            "slack": slack_user_id
-        },
-        "identityConfidence": identity_confidence,
-        "response": response
+        "category": "triagebot",
+        "details": {
+            "identifier": identifier,
+            "user": {
+                "email": email,
+                "slack": slack_user_id,
+                "slackName": slack_name
+            },
+            "identityConfidence": identity_confidence,
+            "response": response
+        }
     }
+    logger.debug('Sending to SQS : {}'.format(data))
     client = boto3.client('sqs')
     response = client.send_message(
         QueueUrl=CONFIG.queue_url,
