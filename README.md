@@ -112,3 +112,24 @@ You can fetch the User API keys from the CloudFormation outputs
 ```shell script
 make show-user-credentials
 ```
+
+### Integrating MozDef and the MozDef-Triage-Bot
+
+The CloudFormation templates in this repo provision an AWS IAM user as well as
+the SQS queue which MozDef receives messages from.
+
+To integrate MozDef with the bot
+* Deploy the `slack-triage-bot-user.yaml` CloudFormation template
+* Gather the 3 sets of information you'll need to put into the `MozDef-deploy`
+  ansible repo to configure MozDef
+  * The API keys 
+    * either look at the stack outputs or by run `make show-user-credentials`
+  * The SQS Queue name, AWS region and AWS account ID
+    * either look at the stack outputs or run 
+      `make discover-lambda-function-name`
+  * The Lambda function name
+     * either look at the stack outputs or run 
+       `make discover-lambda-function-name`
+  
+The API keys will grant MozDef permission to both invoke the lambda function
+as well as receive messages from the SQS queue
