@@ -120,15 +120,17 @@ the SQS queue which MozDef receives messages from.
 
 To integrate MozDef with the bot
 * Deploy the `slack-triage-bot-user.yaml` CloudFormation template
+* Deploy the `slack-traige-bot-api.yaml` CloudFormation template
 * Gather the 3 sets of information you'll need to put into the `MozDef-deploy`
-  ansible repo to configure MozDef
+  Ansible repo to configure MozDef
   * The API keys 
-    * either look at the stack outputs or by run `make show-user-credentials`
+    * either look at the stack outputs in the user stack or run 
+      `make show-user-credentials`
   * The SQS Queue name, AWS region and AWS account ID
-    * either look at the stack outputs or run 
-      `make discover-lambda-function-name`
+    * either look at the stack outputs in the api stack or run 
+      `make discover-sqs-queue-url`
   * The Lambda function name
-     * either look at the stack outputs or run 
+     * either look at the stack outputs in the api stack or run 
        `make discover-lambda-function-name`
   
 The API keys will grant MozDef permission to both invoke the lambda function
