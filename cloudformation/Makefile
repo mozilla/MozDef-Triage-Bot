@@ -124,6 +124,7 @@ discover-sqs-queue-url:
 	AWS_ACCESS_KEY_ID=$$ACCESS_KEY AWS_SECRET_ACCESS_KEY=$$SECRET_KEY AWS_SESSION_TOKEN= aws lambda invoke \
 	  --function-name $$FUNCTION_NAME \
 	  --payload '{"action": "discover-sqs-queue-url"}' \
+		--output json \
 	  response.json && \
 	cat response.json && \
 	rm response.json
