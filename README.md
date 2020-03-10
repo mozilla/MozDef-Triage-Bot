@@ -10,6 +10,9 @@ To deploy the slack-triage-bot-api into AWS
   and SQS queue
   `make deploy-mozdef-slack-triage-bot-user`
 * determine the Slack Client Secret
+  * This can be done by going to the Slack App's configuration (at a URL like
+    `https://api.slack.com/apps/ABCDE123AB/general`) and finding the `Client Secret`
+    in the `App Credentials` section
 * Run the make command for the environment you want
 
 ```shell script
@@ -23,27 +26,6 @@ DEV_SLACK_CLIENT_SECRET=0123456789abcdef0123456789abcdef make deploy-mozdef-slac
 ```
 
 depending on the account
-
-### Configuring in Slack
-
-* Interactive Components
-  * Interactivity
-    * Request URL
-      * `https://example.com/slack/interactive-endpoint`
-  * Select Menus
-    * Options Load URL
-      * `https://example.com/slack/options-load-endpoint`
-* OAuth & Permissions
-  * OAuth Tokens & Redirect URLs
-    * Redirect URLs
-      * `https://example.com/redirect_uri`
-  * Scopes
-    * Bot Token Scopes
-      * `users:read.email` : https://api.slack.com/methods/users.lookupByEmail
-      * `users:read` : This is required because of users:read.email
-      * `im:write` : https://api.slack.com/methods/conversations.open
-      * `chat:write` : https://api.slack.com/methods/chat.postMessage
-* Install app
 
 ### Testing
 
@@ -135,3 +117,31 @@ To integrate MozDef with the bot
   
 The API keys will grant MozDef permission to both invoke the lambda function
 as well as receive messages from the SQS queue
+
+## Slack
+
+### Configuring in Slack
+
+* Interactive Components
+  * Interactivity
+    * Request URL
+      * `https://example.com/slack/interactive-endpoint`
+  * Select Menus
+    * Options Load URL
+      * `https://example.com/slack/options-load-endpoint`
+* OAuth & Permissions
+  * OAuth Tokens & Redirect URLs
+    * Redirect URLs
+      * `https://example.com/redirect_uri`
+  * Scopes
+    * Bot Token Scopes
+      * `users:read.email` : https://api.slack.com/methods/users.lookupByEmail
+      * `users:read` : This is required because of users:read.email
+      * `im:write` : https://api.slack.com/methods/conversations.open
+      * `chat:write` : https://api.slack.com/methods/chat.postMessage
+* Install app
+
+### Mozilla's deployments in Slack
+
+* [Mozilla deployment](https://api.slack.com/apps/AS6G90NUT/general)
+* [mozilla-sandbox-SCIM deployment](https://api.slack.com/apps/AR6G404SH/general)
