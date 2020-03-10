@@ -11,8 +11,10 @@ To deploy the slack-triage-bot-api into AWS
   `make deploy-mozdef-slack-triage-bot-user`
 * determine the Slack Client Secret
   * This can be done by going to the Slack App's configuration (at a URL like
-    `https://api.slack.com/apps/ABCDE123AB/general`) and finding the `Client Secret`
-    in the `App Credentials` section
+    `https://api.slack.com/apps/ABCDE123AB/general`).
+  * Navigate to https://api.slack.com/apps
+  * Click your app to get to the confiruation page
+  * Find the `Client Secret` in the `App Credentials` section
 * Run the make command for the environment you want
 
 ```shell script
