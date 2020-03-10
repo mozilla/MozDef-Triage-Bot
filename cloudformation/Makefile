@@ -1,6 +1,6 @@
 API_STACK_NAME	:= MozDefSlackTriageBotAPI
 USER_STACK_NAME	:= MozDefSlackTriageBotUser
-CODE_STORAGE_S3_PREFIX	:= mozdef-slack-traige-bot-api
+CODE_STORAGE_S3_PREFIX	:= mozdef-slack-triage-bot-api
 PROD_LAMBDA_CODE_STORAGE_S3_BUCKET_NAME	:= public.us-west-2.infosec.mozilla.org
 DEV_LAMBDA_CODE_STORAGE_S3_BUCKET_NAME	:= public.us-west-2.security.allizom.org
 PROD_ACCOUNT_ID		:= 371522382791

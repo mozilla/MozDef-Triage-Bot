@@ -90,7 +90,7 @@ make discover-sqs-queue-url
 which will return a value like
 
 ```json
-{"result": "https://sqs.us-west-2.amazonaws.com/012345678901/MozDefSlackTraigeBotAPI-SlackTriageBotMozDefQueue-ABCDEFGHIJKL"}
+{"result": "https://sqs.us-west-2.amazonaws.com/012345678901/MozDefSlackTriageBotAPI-SlackTriageBotMozDefQueue-ABCDEFGHIJKL"}
 ```
 
 ### Discovering the Lambda function name
@@ -120,7 +120,7 @@ the SQS queue which MozDef receives messages from.
 
 To integrate MozDef with the bot
 * Deploy the `slack-triage-bot-user.yaml` CloudFormation template
-* Deploy the `slack-traige-bot-api.yaml` CloudFormation template
+* Deploy the `slack-triage-bot-api.yaml` CloudFormation template
 * Gather the 3 sets of information you'll need to put into the `MozDef-deploy`
   Ansible repo to configure MozDef
   * The API keys 

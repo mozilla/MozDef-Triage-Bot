@@ -112,7 +112,7 @@ Resources:
   SlackTriageBotApiFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Description: MozDef Slack Traige Bot API
+      Description: MozDef Slack Triage Bot API
       Code: build/
       Environment:
         Variables:
