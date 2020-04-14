@@ -11,10 +11,10 @@ PROD_DOMAIN_ZONE	:= security.mozilla.org.
 DEV_DOMAIN_ZONE		:= security.allizom.org.
 PROD_CERT_ARN		:= arn:aws:acm:us-west-2:371522382791:certificate/71e3c455-de1f-4a9d-b50e-440624854c48
 DEV_CERT_ARN		:= arn:aws:acm:us-west-2:656532927350:certificate/2e59930d-ae8c-43fa-adff-ed3b1a902caa
-PROD_SLACK_CLIENT_ID	:= ???
+PROD_SLACK_CLIENT_ID	:= 2258538036.890553022979
 DEV_SLACK_CLIENT_ID		:= 371351187216.856548004901
-# PROD_SLACK_CLIENT_SECRET	:= ???
-# DEV_SLACK_CLIENT_SECRET		:= ???
+# PROD_SLACK_CLIENT_SECRET	:= Get this value here : https://api.slack.com/apps/AS6G90NUT/general
+# DEV_SLACK_CLIENT_SECRET		:= Get this value here : https://api.slack.com/apps/AR6G404SH/general
 
 .PHONE: deploy-mozdef-slack-triage-bot-user
 deploy-mozdef-slack-triage-bot-user:
@@ -23,6 +23,7 @@ deploy-mozdef-slack-triage-bot-user:
 
 .PHONE: deploy-mozdef-slack-triage-bot-api-dev
 deploy-mozdef-slack-triage-bot-api-dev:
+	@test -n "$(DEV_SLACK_CLIENT_SECRET)"
 	./deploy.sh \
 		 $(DEV_ACCOUNT_ID) \
 		 slack-triage-bot-api.yaml \
@@ -38,6 +39,7 @@ deploy-mozdef-slack-triage-bot-api-dev:
 
 .PHONE: deploy-mozdef-slack-triage-bot-api
 deploy-mozdef-slack-triage-bot-api:
+	@test -n "$(PROD_SLACK_CLIENT_SECRET)"
 	./deploy.sh \
 		 $(PROD_ACCOUNT_ID) \
 		 slack-triage-bot-api.yaml \
