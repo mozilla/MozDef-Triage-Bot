@@ -23,6 +23,7 @@ deploy-mozdef-slack-triage-bot-user:
 
 .PHONE: deploy-mozdef-slack-triage-bot-api-dev
 deploy-mozdef-slack-triage-bot-api-dev:
+	@test -n "$(DEV_SLACK_CLIENT_SECRET)"
 	./deploy.sh \
 		 $(DEV_ACCOUNT_ID) \
 		 slack-triage-bot-api.yaml \
@@ -38,6 +39,7 @@ deploy-mozdef-slack-triage-bot-api-dev:
 
 .PHONE: deploy-mozdef-slack-triage-bot-api
 deploy-mozdef-slack-triage-bot-api:
+	@test -n "$(PROD_SLACK_CLIENT_SECRET)"
 	./deploy.sh \
 		 $(PROD_ACCOUNT_ID) \
 		 slack-triage-bot-api.yaml \
