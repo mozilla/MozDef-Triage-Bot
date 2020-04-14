@@ -37,8 +37,8 @@ fi
 set -e
 
 # This tempfile is required because of https://github.com/aws/aws-cli/issues/2504
-TMPFILE=$(mktemp --suffix .yaml)
-TMPDIR=$(mktemp --directory)
+TMPFILE="$(mktemp).yaml"
+TMPDIR=$(mktemp -d)
 TARGET_PATH="`dirname \"${TEMPLATE_FILENAME}\"`"
 ln --no-dereference --force --symbolic $TMPDIR "${TARGET_PATH}/build"
 trap "{ rm --verbose --force $TMPFILE;rm --force --recursive $TMPDIR;rm --verbose --force \"${TARGET_PATH}/build\"; }" EXIT
