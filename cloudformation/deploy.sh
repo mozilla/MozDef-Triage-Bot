@@ -40,7 +40,7 @@ set -e
 TMPFILE="$(mktemp).yaml"
 TMPDIR=$(mktemp -d)
 TARGET_PATH="`dirname \"${TEMPLATE_FILENAME}\"`"
-ln --no-dereference --force --symbolic $TMPDIR "${TARGET_PATH}/build"
+ln -n -f -s $TMPDIR "${TARGET_PATH}/build"
 trap "{ rm --verbose --force $TMPFILE;rm --force --recursive $TMPDIR;rm --verbose --force \"${TARGET_PATH}/build\"; }" EXIT
 
 pip install --target "${TARGET_PATH}/build/" -r "${TARGET_PATH}/requirements.txt"
