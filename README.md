@@ -18,7 +18,7 @@ To deploy the slack-triage-bot-api into AWS
 * Run the make command for the environment you want
 
 ```shell script
-DEV_SLACK_CLIENT_SECRET=0123456789abcdef0123456789abcdef make deploy-mozdef-slack-triage-bot-api
+PROD_SLACK_CLIENT_SECRET=0123456789abcdef0123456789abcdef make deploy-mozdef-slack-triage-bot-api
 ```
 
 or

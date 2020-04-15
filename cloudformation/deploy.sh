@@ -37,15 +37,15 @@ fi
 set -e
 
 # This tempfile is required because of https://github.com/aws/aws-cli/issues/2504
-TMPFILE=$(mktemp --suffix .yaml)
-TMPDIR=$(mktemp --directory)
+TMPFILE="$(mktemp).yaml"
+TMPDIR=$(mktemp -d)
 TARGET_PATH="`dirname \"${TEMPLATE_FILENAME}\"`"
-ln --no-dereference --force --symbolic $TMPDIR "${TARGET_PATH}/build"
-trap "{ rm --verbose --force $TMPFILE;rm --force --recursive $TMPDIR;rm --verbose --force \"${TARGET_PATH}/build\"; }" EXIT
+ln -n -f -s $TMPDIR "${TARGET_PATH}/build"
+trap "{ rm -v -f $TMPFILE;rm -f -r $TMPDIR;rm -v -f \"${TARGET_PATH}/build\"; }" EXIT
 
 pip install --target "${TARGET_PATH}/build/" -r "${TARGET_PATH}/requirements.txt"
 # https://unix.stackexchange.com/a/180987/22701
-cp --verbose --recursive "${TARGET_PATH}/functions/." "${TARGET_PATH}/build/"
+cp -v -R "${TARGET_PATH}/functions/." "${TARGET_PATH}/build/"
 
 aws cloudformation package \
   --template $TEMPLATE_FILENAME \
