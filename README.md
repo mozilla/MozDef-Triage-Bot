@@ -16,18 +16,24 @@ To deploy the slack-triage-bot-api into AWS
   * Click your app to get to the confiruation page
   * Find the `Client Secret` in the `App Credentials` section
 * Run the make command for the environment you want
-
-```shell script
-PROD_SLACK_CLIENT_SECRET=0123456789abcdef0123456789abcdef make deploy-mozdef-slack-triage-bot-api
-```
-
-or
-
-```shell script
-DEV_SLACK_CLIENT_SECRET=0123456789abcdef0123456789abcdef make deploy-mozdef-slack-triage-bot-api-dev
-```
-
-depending on the account
+    ```shell script
+    PROD_SLACK_CLIENT_SECRET=0123456789abcdef0123456789abcdef make deploy-mozdef-slack-triage-bot-api
+    ```
+    
+    or
+    
+    ```shell script
+    DEV_SLACK_CLIENT_SECRET=0123456789abcdef0123456789abcdef make deploy-mozdef-slack-triage-bot-api-dev
+    ```
+    
+    depending on the account
+* Provision a Slack OAuth token for the bot by browsing to the `/authorize` URL
+  of the deployed API in any browser. You can find the domain name of the API in
+  the `PROD_DOMAIN_NAME` or `DEV_DOMAIN_NAME` variables in the [`Makefile`](Makefile).
+  By hitting this `/authorize` URL, it will cause the API to contact Slack and
+  request an OAuth token which the bot will then store in SSM Parameter Store.
+  This step need only be done once as, from this point on, the bot will continue
+  to use this stored token.
 
 ### Testing
 
