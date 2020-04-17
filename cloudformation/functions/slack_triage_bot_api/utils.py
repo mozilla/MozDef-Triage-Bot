@@ -23,14 +23,19 @@ def store_oauth_token(client_id: str, access_token: str) -> dict:
              parameter
     """
     client = boto3.client('ssm')
-    return client.put_parameter(
-        Name='{}-{}'.format(
-            CONFIG.slack_token_parameter_store_name, client_id),
+    name = '{}-{}'.format(
+        CONFIG.slack_token_parameter_store_name, client_id)
+    response_put = client.put_parameter(
+        Name=name,
         Description='The Slack OAuth access token for the MozDef Slack Triage '
                     'Bot API',
         Value=access_token,
         Type='SecureString',
         Overwrite=True,
+    )
+    response_tag = client.add_tags_to_resource(
+        ResourceType='Parameter',
+        ResourceId=name,
         Tags=[
             {
                 'Key': 'Application',
@@ -38,6 +43,7 @@ def store_oauth_token(client_id: str, access_token: str) -> dict:
             },
         ]
     )
+    return response_put
 
 
 def get_access_token(client_id: str) -> dict:
