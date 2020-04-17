@@ -84,6 +84,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
+                  - ssm:GetParameter
                   - ssm:GetParameters
                   - ssm:PutParameter
                   - ssm:AddTagsToResource
