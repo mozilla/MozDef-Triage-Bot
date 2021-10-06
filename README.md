@@ -11,6 +11,16 @@ A Slack bot that facilitates triaging MozDef alerts by automating outreach to Mo
 
 ### MozDef Triggers the Bot
 
+MozDef Triggers the Bot
+
+1. MozDef, using the dedicated [bot AWS user](https://github.com/mozilla/MozDef-Triage-Bot/blob/master/cloudformation/slack-triage-bot-user.yaml), 
+   [invokes The Bot's AWS Lambda function](https://github.com/mozilla/MozDef/blob/bca65c274d363d56c417caada64be05e8585cd68/alerts/actions/triage_bot.py#L497)
+   passing The Bot a unique `identifier`, the user to pose the question 
+   to, the name of the alert to send the user, the summary test of the alert to 
+   send the user and the level of confidence MozDef has in the identity of the user
+2. The Bot [sends a direct message to the user on Slack](https://github.com/mozilla/MozDef-Triage-Bot/blob/f36b293c37e407e96a20c3b225ed10467a835d0c/cloudformation/functions/slack_triage_bot_api/app.py#L235)
+   with the user the question via the Slack API
+
 ![MozDef Triggers the Bot](https://mermaid.ink/img/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBtb3pkZWZbTW96RGVmXVxuICAgIGJvdFtUaGUgQm90XVxuICAgIHNsYWNrW1NsYWNrIEFQSV1cbiAgICB1c2VyW1VzZXJdXG4gICAgbW96ZGVmIC0tPnxsYW1iZGEuaW52b2tlfCBib3RcbiAgICBib3QgLS0-fFBPU1R8IHNsYWNrXG4gICAgc2xhY2sgLS0-fERpc3BsYXkgbWVzc2FnZXwgdXNlclxuICAgICIsIm1lcm1haWQiOiJ7XG4gIFwidGhlbWVcIjogXCJkZWZhdWx0XCJcbn0iLCJ1cGRhdGVFZGl0b3IiOmZhbHNlLCJhdXRvU3luYyI6dHJ1ZSwidXBkYXRlRGlhZ3JhbSI6ZmFsc2V9)
 
 <details>
@@ -29,6 +39,20 @@ graph TD
 </details>
 
 ### The User Response
+
+1. The user clicks one of the buttons in the Slack message, indicating their response
+2. Slack POSTs to https://mozdef-triage-bot.example.com/slack/interactive-endpoint
+   with the details of the user's response
+3. The Bot receives the POST and
+   1. [Emits an event to MozDef](https://github.com/mozilla/MozDef-Triage-Bot/blob/f36b293c37e407e96a20c3b225ed10467a835d0c/cloudformation/functions/slack_triage_bot_api/app.py#L344-L351)
+      via [an SQS queue created for MozDef to consume](https://github.com/mozilla/MozDef-Triage-Bot/blob/f36b293c37e407e96a20c3b225ed10467a835d0c/cloudformation/functions/slack_triage_bot_api/config.py#L13)
+      with a MozDef event with a category of triagebot , the [unique `identifier`](https://github.com/mozilla/MozDef-Triage-Bot/blob/f36b293c37e407e96a20c3b225ed10467a835d0c/cloudformation/functions/slack_triage_bot_api/app.py#L345)
+      that MozDef [created above](https://github.com/mozilla/MozDef-Triage-Bot/blob/f36b293c37e407e96a20c3b225ed10467a835d0c/cloudformation/functions/slack_triage_bot_api/app.py#L460)
+      when it triggered the bot, the identity of the user and the user's response
+   2. [POSTs back](https://github.com/mozilla/MozDef-Triage-Bot/blob/f36b293c37e407e96a20c3b225ed10467a835d0c/cloudformation/functions/slack_triage_bot_api/app.py#L358-L361)
+      to Slack to update the Slack UI to show that The Bot received the user's 
+      button click. This adds the `Understood, thanks for letting us know.` annotation
+      to the Slack message.
 
 ![The User Response](https://mermaid.ink/img/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBtb3pkZWZbTW96RGVmXVxuICAgIGJvdFtUaGUgQm90XVxuICAgIHNsYWNrW1NsYWNrIEFQSV1cbiAgICB1c2VyW1VzZXJdXG4gICAgYXBpZ2F0ZXdheVttb3pkZWYtdHJpYWdlLWJvdC5leGFtcGxlLmNvbV1cbiAgICBzcXNbTW96RGVmIFNRUyBRdWV1ZV1cbiAgICB1c2VyIC0tPnxDbGljayBtZXNzYWdlIGJ1dHRvbnwgc2xhY2tcbiAgICBzbGFjayAtLT58UE9TVHwgYXBpZ2F0ZXdheVxuICAgIGFwaWdhdGV3YXkgLS0-fGludm9rZXwgYm90XG4gICAgYm90IC0tPnxzcXMuc2VuZF9tZXNzYWdlfCBzcXNcbiAgICBtb3pkZWYgLS0-fHNxcy5yZWNlaXZlX21lc3NhZ2V8IHNxcyIsIm1lcm1haWQiOiJ7XG4gIFwidGhlbWVcIjogXCJkZWZhdWx0XCJcbn0iLCJ1cGRhdGVFZGl0b3IiOmZhbHNlLCJhdXRvU3luYyI6dHJ1ZSwidXBkYXRlRGlhZ3JhbSI6ZmFsc2V9)
 
