@@ -152,3 +152,5 @@ as well as receive messages from the SQS queue
 
 * [Mozilla deployment](https://api.slack.com/apps/AS6G90NUT/general)
 * [mozilla-sandbox-SCIM deployment](https://api.slack.com/apps/AR6G404SH/general)
+
+More Mozilla specific information can be found in mana : https://mana.mozilla.org/wiki/display/SECURITY/Mozilla+Security+Bot+or+MozDef+Triage+Bot
