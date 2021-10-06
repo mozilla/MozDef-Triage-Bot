@@ -1,6 +1,56 @@
 # MozDef-Triage-Bot
 A Slack bot that facilitates triaging MozDef alerts by automating outreach to Mozillians
 
+
+## Flow
+
+* MozDef : The running instance of the MozDef SIEM
+* The Bot : Serverless AWS Lambda Code triggered either by calls to the API Gateway 
+  or via direct AWS Lambda invocation with the AWS API
+* Slack : The Slack API
+
+### MozDef Triggers the Bot
+
+![MozDef Triggers the Bot](https://mermaid.ink/img/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBtb3pkZWZbTW96RGVmXVxuICAgIGJvdFtUaGUgQm90XVxuICAgIHNsYWNrW1NsYWNrIEFQSV1cbiAgICB1c2VyW1VzZXJdXG4gICAgbW96ZGVmIC0tPnxsYW1iZGEuaW52b2tlfCBib3RcbiAgICBib3QgLS0-fFBPU1R8IHNsYWNrXG4gICAgc2xhY2sgLS0-fERpc3BsYXkgbWVzc2FnZXwgdXNlclxuICAgICIsIm1lcm1haWQiOiJ7XG4gIFwidGhlbWVcIjogXCJkZWZhdWx0XCJcbn0iLCJ1cGRhdGVFZGl0b3IiOmZhbHNlLCJhdXRvU3luYyI6dHJ1ZSwidXBkYXRlRGlhZ3JhbSI6ZmFsc2V9)
+
+<details>
+  <summary>Click to see the mermaid code</summary>
+
+```mermaid
+graph TD
+    mozdef[MozDef]
+    bot[The Bot]
+    slack[Slack API]
+    user[User]
+    mozdef -->|lambda.invoke| bot
+    bot -->|POST| slack
+    slack -->|Display message| user
+```
+</details>
+
+### The User Response
+
+![The User Response](https://mermaid.ink/img/eyJjb2RlIjoiZ3JhcGggVERcbiAgICBtb3pkZWZbTW96RGVmXVxuICAgIGJvdFtUaGUgQm90XVxuICAgIHNsYWNrW1NsYWNrIEFQSV1cbiAgICB1c2VyW1VzZXJdXG4gICAgYXBpZ2F0ZXdheVttb3pkZWYtdHJpYWdlLWJvdC5leGFtcGxlLmNvbV1cbiAgICBzcXNbTW96RGVmIFNRUyBRdWV1ZV1cbiAgICB1c2VyIC0tPnxDbGljayBtZXNzYWdlIGJ1dHRvbnwgc2xhY2tcbiAgICBzbGFjayAtLT58UE9TVHwgYXBpZ2F0ZXdheVxuICAgIGFwaWdhdGV3YXkgLS0-fGludm9rZXwgYm90XG4gICAgYm90IC0tPnxzcXMuc2VuZF9tZXNzYWdlfCBzcXNcbiAgICBtb3pkZWYgLS0-fHNxcy5yZWNlaXZlX21lc3NhZ2V8IHNxcyIsIm1lcm1haWQiOiJ7XG4gIFwidGhlbWVcIjogXCJkZWZhdWx0XCJcbn0iLCJ1cGRhdGVFZGl0b3IiOmZhbHNlLCJhdXRvU3luYyI6dHJ1ZSwidXBkYXRlRGlhZ3JhbSI6ZmFsc2V9)
+
+<details>
+  <summary>Click to see the mermaid code</summary>
+
+```mermaid
+graph TD
+    mozdef[MozDef]
+    bot[The Bot]
+    slack[Slack API]
+    user[User]
+    apigateway[mozdef-triage-bot.example.com]
+    sqs[MozDef SQS Queue]
+    user -->|Click message button| slack
+    slack -->|POST| apigateway
+    apigateway -->|invoke| bot
+    bot -->|sqs.send_message| sqs
+    mozdef -->|sqs.receive_message| sqs
+```
+</details>
+
 ## Deployment
 
 In these instructions we'll assume that the domain name that the bot is deployed
