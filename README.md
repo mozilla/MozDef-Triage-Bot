@@ -1,6 +1,11 @@
 # MozDef-Triage-Bot
 A Slack bot that facilitates triaging MozDef alerts by automating outreach to Mozillians
 
+# Status
+
+---
+This code isn't being actively maintained as we're no longer using this Slack bot. Feel free to fork and continue it if you wish.
+---
 
 ## Flow
 
